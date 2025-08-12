@@ -2,6 +2,14 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Plus, Package, Truck, Clock, CircleCheck as CheckCircle, Circle as XCircle, Phone, User, MapPin } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, Dimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Plus, Package, Truck, Clock, CircleCheck as CheckCircle, Circle as XCircle, Phone, User, MapPin } from 'lucide-react-native';
+
+const { width: screenWidth } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
+const isDesktop = isWeb && screenWidth >= 768;
 
 interface Order {
   id: string;
@@ -340,8 +348,8 @@ const styles = StyleSheet.create({
   tab: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: isWeb ? 12 : 16,
+    paddingVertical: isWeb ? 6 : 8,
     borderRadius: 20,
     backgroundColor: '#FFFFFF',
     marginRight: 8,
@@ -353,7 +361,7 @@ const styles = StyleSheet.create({
     borderColor: '#2563EB',
   },
   tabText: {
-    fontSize: 14,
+    fontSize: isWeb ? 12 : 14,
     fontWeight: '600',
     color: '#6B7280',
     marginRight: 8,
@@ -364,16 +372,16 @@ const styles = StyleSheet.create({
   countBadge: {
     backgroundColor: '#F3F4F6',
     borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    minWidth: 24,
+    paddingHorizontal: isWeb ? 6 : 8,
+    paddingVertical: isWeb ? 1 : 2,
+    minWidth: isWeb ? 20 : 24,
     alignItems: 'center',
   },
   countBadgeActive: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   countText: {
-    fontSize: 12,
+    fontSize: isWeb ? 10 : 12,
     fontWeight: '700',
     color: '#6B7280',
   },

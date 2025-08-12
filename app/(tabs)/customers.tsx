@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, Modal, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, Alert, Modal, Dimensions, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Search, Plus, Phone, Mail, MapPin, Filter, MoveVertical as MoreVertical, X, Calendar, Clock, User, Building, Tag, CircleCheck as CheckCircle, Circle as XCircle, CreditCard as Edit3, Save, TriangleAlert as AlertTriangle } from 'lucide-react-native';
+import { Search, Plus, Phone, Mail, MapPin, Filter, MoveVertical as MoreVertical, X, Calendar, Clock, User, Building, Tag, CircleCheck as CheckCircle, Circle as XCircle, CreditCard as Edit3, Save, TriangleAlert as AlertTriangle, ChevronRight } from 'lucide-react-native';
 
 interface Customer {
   id: string;
@@ -40,7 +40,8 @@ interface Reminder {
 }
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-const isDesktop = screenWidth >= 768;
+const isWeb = Platform.OS === 'web';
+const isDesktop = isWeb && screenWidth >= 768;
 
 export default function CustomersScreen() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -288,9 +289,9 @@ export default function CustomersScreen() {
       <Modal
         visible={!!expandedCustomer}
         animationType="slide"
-        presentationStyle="fullScreen"
+        presentationStyle={isDesktop ? "pageSheet" : "fullScreen"}
       >
-        <SafeAreaView style={styles.expandedContainer}>
+        <SafeAreaView style={[styles.expandedContainer, isDesktop && styles.expandedContainerDesktop]}>
           {/* Header */}
           <View style={styles.expandedHeader}>
             <TouchableOpacity 
@@ -303,7 +304,7 @@ export default function CustomersScreen() {
             <View style={styles.headerSpacer} />
           </View>
 
-          {/* Customer Info Card */}
+          {/* Customer Info - Simplified */}
           <View style={styles.customerInfoCard}>
             <View style={styles.customerHeader}>
               <View style={styles.customerAvatar}>
@@ -312,7 +313,7 @@ export default function CustomersScreen() {
               <View style={styles.customerDetails}>
                 <Text style={styles.customerNameLarge}>{expandedCustomer.name}</Text>
                 <Text style={styles.companyNameLarge}>{expandedCustomer.company}</Text>
-                <View style={styles.badgeContainer}>
+                <View style={styles.simpleBadgeContainer}>
                   <View style={[styles.categoryBadge, { backgroundColor: getCategoryBgColor(expandedCustomer.category) }]}>
                     <Text style={[styles.categoryText, { color: getCategoryColor(expandedCustomer.category) }]}>
                       {expandedCustomer.category.toUpperCase()}
@@ -326,250 +327,193 @@ export default function CustomersScreen() {
                 </View>
               </View>
             </View>
-          </View>
-
-          {/* Tabs */}
-          <View style={styles.tabContainer}>
-            {['info', 'tasks', 'reminders'].map((tab) => (
-              <TouchableOpacity
-                key={tab}
-                style={[styles.tab, activeTab === tab && styles.activeTab]}
-                onPress={() => setActiveTab(tab as any)}
-              >
-                <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                </Text>
+            
+            {/* Quick Contact Actions */}
+            <View style={styles.quickContactActions}>
+              <TouchableOpacity style={styles.quickContactButton} onPress={() => handleCall(expandedCustomer.phone)}>
+                <Phone size={16} color="#2563EB" />
+                <Text style={styles.quickContactText}>Call</Text>
               </TouchableOpacity>
-            ))}
+              <TouchableOpacity style={styles.quickContactButton} onPress={() => handleEmail(expandedCustomer.email)}>
+                <Mail size={16} color="#059669" />
+                <Text style={styles.quickContactText}>Email</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
-          {/* Tab Content */}
-          <ScrollView style={styles.tabContent}>
-            {activeTab === 'info' && (
-              <View style={styles.infoContent}>
-                <View style={styles.contactSection}>
-                  <Text style={styles.sectionTitle}>Contact Information</Text>
-                  <TouchableOpacity style={styles.contactItem} onPress={() => handleCall(expandedCustomer.phone)}>
-                    <Phone size={20} color="#2563EB" />
-                    <Text style={styles.contactText}>{expandedCustomer.phone}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.contactItem} onPress={() => handleEmail(expandedCustomer.email)}>
-                    <Mail size={20} color="#059669" />
-                    <Text style={styles.contactText}>{expandedCustomer.email}</Text>
-                  </TouchableOpacity>
-                  <View style={styles.contactItem}>
-                    <MapPin size={20} color="#F97316" />
-                    <Text style={styles.contactText}>{expandedCustomer.address}, {expandedCustomer.city}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.statsSection}>
-                  <Text style={styles.sectionTitle}>Statistics</Text>
-                  <View style={styles.statsGrid}>
-                    <View style={styles.statItem}>
-                      <Text style={styles.statValue}>{expandedCustomer.totalOrders}</Text>
-                      <Text style={styles.statLabel}>Total Orders</Text>
-                    </View>
-                    <View style={styles.statItem}>
-                      <Text style={styles.statValue}>
-                        {new Date(expandedCustomer.lastContact).toLocaleDateString()}
-                      </Text>
-                      <Text style={styles.statLabel}>Last Contact</Text>
-                    </View>
-                  </View>
-                </View>
-              </View>
-            )}
-
-            {activeTab === 'tasks' && (
-              <View style={styles.tasksContent}>
-                <View style={styles.addTaskSection}>
-                  <Text style={styles.sectionTitle}>Add New Task</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Task title"
-                    value={newTask.title}
-                    onChangeText={(text) => setNewTask({ ...newTask, title: text })}
-                  />
-                  <TextInput
-                    style={[styles.input, styles.textArea]}
-                    placeholder="Task description"
-                    value={newTask.description}
-                    onChangeText={(text) => setNewTask({ ...newTask, description: text })}
-                    multiline
-                    numberOfLines={3}
-                  />
-                  <View style={styles.inputRow}>
-                    <View style={styles.inputHalf}>
-                      <Text style={styles.inputLabel}>Priority</Text>
-                      <View style={styles.priorityButtons}>
-                        {['low', 'medium', 'high'].map((priority) => (
-                          <TouchableOpacity
-                            key={priority}
-                            style={[
-                              styles.priorityButton,
-                              newTask.priority === priority && styles.priorityButtonActive,
-                              { borderColor: getPriorityColor(priority) }
-                            ]}
-                            onPress={() => setNewTask({ ...newTask, priority: priority as any })}
-                          >
-                            <Text style={[
-                              styles.priorityButtonText,
-                              newTask.priority === priority && { color: getPriorityColor(priority) }
-                            ]}>
-                              {priority}
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    </View>
-                    <View style={styles.inputHalf}>
-                      <Text style={styles.inputLabel}>Due Date</Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="YYYY-MM-DD"
-                        value={newTask.dueDate}
-                        onChangeText={(text) => setNewTask({ ...newTask, dueDate: text })}
-                      />
-                    </View>
-                  </View>
-                  <TouchableOpacity style={styles.addButton} onPress={handleAddTask}>
-                    <Plus size={20} color="#FFFFFF" />
-                    <Text style={styles.addButtonText}>Add Task</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.existingTasksSection}>
-                  <Text style={styles.sectionTitle}>Existing Tasks</Text>
-                  {expandedCustomer.tasks.map((task) => (
-                    <View key={task.id} style={styles.taskCard}>
-                      <View style={styles.taskHeader}>
-                        <Text style={styles.taskTitle}>{task.title}</Text>
-                        <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(task.priority) + '20' }]}>
-                          <Text style={[styles.priorityText, { color: getPriorityColor(task.priority) }]}>
-                            {task.priority.toUpperCase()}
-                          </Text>
-                        </View>
-                      </View>
-                      <Text style={styles.taskDescription}>{task.description}</Text>
-                      <View style={styles.taskFooter}>
-                        <Text style={styles.taskDueDate}>Due: {new Date(task.dueDate).toLocaleDateString()}</Text>
-                        <View style={styles.taskStatus}>
-                          {task.status === 'completed' ? (
-                            <CheckCircle size={16} color="#10B981" />
-                          ) : (
-                            <Clock size={16} color="#F59E0B" />
-                          )}
-                          <Text style={[
-                            styles.taskStatusText,
-                            { color: task.status === 'completed' ? '#10B981' : '#F59E0B' }
-                          ]}>
-                            {task.status.toUpperCase()}
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-
-            {activeTab === 'reminders' && (
-              <View style={styles.remindersContent}>
-                <View style={styles.addReminderSection}>
-                  <Text style={styles.sectionTitle}>Add New Reminder</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Reminder title"
-                    value={newReminder.title}
-                    onChangeText={(text) => setNewReminder({ ...newReminder, title: text })}
-                  />
-                  <TextInput
-                    style={[styles.input, styles.textArea]}
-                    placeholder="Reminder description"
-                    value={newReminder.description}
-                    onChangeText={(text) => setNewReminder({ ...newReminder, description: text })}
-                    multiline
-                    numberOfLines={3}
-                  />
-                  <View style={styles.inputRow}>
-                    <View style={styles.inputHalf}>
-                      <Text style={styles.inputLabel}>Type</Text>
-                      <View style={styles.typeButtons}>
-                        {['call', 'email', 'visit', 'follow-up'].map((type) => (
-                          <TouchableOpacity
-                            key={type}
-                            style={[
-                              styles.typeButton,
-                              newReminder.type === type && styles.typeButtonActive
-                            ]}
-                            onPress={() => setNewReminder({ ...newReminder, type: type as any })}
-                          >
-                            <Text style={[
-                              styles.typeButtonText,
-                              newReminder.type === type && styles.typeButtonTextActive
-                            ]}>
-                              {type}
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    </View>
-                    <View style={styles.inputHalf}>
-                      <Text style={styles.inputLabel}>Reminder Date</Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="YYYY-MM-DD HH:MM"
-                        value={newReminder.reminderDate}
-                        onChangeText={(text) => setNewReminder({ ...newReminder, reminderDate: text })}
-                      />
-                    </View>
-                  </View>
-                  <TouchableOpacity style={styles.addButton} onPress={handleAddReminder}>
-                    <Plus size={20} color="#FFFFFF" />
-                    <Text style={styles.addButtonText}>Add Reminder</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.existingRemindersSection}>
-                  <Text style={styles.sectionTitle}>Existing Reminders</Text>
-                  {expandedCustomer.reminders.map((reminder) => (
-                    <View key={reminder.id} style={styles.reminderCard}>
-                      <View style={styles.reminderHeader}>
-                        <Text style={styles.reminderTitle}>{reminder.title}</Text>
-                        <View style={styles.reminderType}>
-                          <Tag size={16} color="#6B7280" />
-                          <Text style={styles.reminderTypeText}>{reminder.type.toUpperCase()}</Text>
-                        </View>
-                      </View>
-                      <Text style={styles.reminderDescription}>{reminder.description}</Text>
-                      <View style={styles.reminderFooter}>
-                        <Text style={styles.reminderDate}>
-                          {new Date(reminder.reminderDate).toLocaleString()}
+          {/* Main Content Area */}
+          <View style={[styles.mainContent, isDesktop && styles.mainContentDesktop]}>
+            {/* Left Side - Tasks and Reminders */}
+            <View style={[styles.leftPanel, isDesktop && styles.leftPanelDesktop]}>
+              {/* Add Task Section */}
+              <View style={styles.simpleSection}>
+                <Text style={styles.simpleSectionTitle}>Add Task</Text>
+                <TextInput
+                  style={styles.simpleInput}
+                  placeholder="Task title"
+                  value={newTask.title}
+                  onChangeText={(text) => setNewTask({ ...newTask, title: text })}
+                />
+                <TextInput
+                  style={[styles.simpleInput, styles.simpleTextArea]}
+                  placeholder="Description (optional)"
+                  value={newTask.description}
+                  onChangeText={(text) => setNewTask({ ...newTask, description: text })}
+                  multiline
+                  numberOfLines={2}
+                />
+                <View style={styles.simpleRow}>
+                  <View style={styles.priorityContainer}>
+                    {['low', 'medium', 'high'].map((priority) => (
+                      <TouchableOpacity
+                        key={priority}
+                        style={[
+                          styles.simplePriorityButton,
+                          newTask.priority === priority && styles.simplePriorityButtonActive,
+                          { borderColor: getPriorityColor(priority) }
+                        ]}
+                        onPress={() => setNewTask({ ...newTask, priority: priority as any })}
+                      >
+                        <Text style={[
+                          styles.simplePriorityText,
+                          newTask.priority === priority && { color: getPriorityColor(priority) }
+                        ]}>
+                          {priority}
                         </Text>
-                        <View style={styles.reminderStatus}>
-                          {reminder.isActive ? (
-                            <CheckCircle size={16} color="#10B981" />
-                          ) : (
-                            <XCircle size={16} color="#EF4444" />
-                          )}
-                          <Text style={[
-                            styles.reminderStatusText,
-                            { color: reminder.isActive ? '#10B981' : '#EF4444' }
-                          ]}>
-                            {reminder.isActive ? 'ACTIVE' : 'INACTIVE'}
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  <TouchableOpacity style={styles.simpleAddButton} onPress={handleAddTask}>
+                    <Plus size={16} color="#FFFFFF" />
+                    <Text style={styles.simpleAddButtonText}>Add</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+          </View>
+
+              {/* Add Reminder Section */}
+              <View style={styles.simpleSection}>
+                <Text style={styles.simpleSectionTitle}>Add Reminder</Text>
+                <TextInput
+                  style={styles.simpleInput}
+                  placeholder="Reminder title"
+                  value={newReminder.title}
+                  onChangeText={(text) => setNewReminder({ ...newReminder, title: text })}
+                />
+                <TextInput
+                  style={[styles.simpleInput, styles.simpleTextArea]}
+                  placeholder="Description (optional)"
+                  value={newReminder.description}
+                  onChangeText={(text) => setNewReminder({ ...newReminder, description: text })}
+                  multiline
+                  numberOfLines={2}
+                />
+                <View style={styles.simpleRow}>
+                  <View style={styles.typeContainer}>
+                    {['call', 'email', 'visit'].map((type) => (
+                      <TouchableOpacity
+                        key={type}
+                        style={[
+                          styles.simpleTypeButton,
+                          newReminder.type === type && styles.simpleTypeButtonActive
+                        ]}
+                        onPress={() => setNewReminder({ ...newReminder, type: type as any })}
+                      >
+                        <Text style={[
+                          styles.simpleTypeText,
+                          newReminder.type === type && styles.simpleTypeTextActive
+                        ]}>
+                          {type}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  <TouchableOpacity style={styles.simpleAddButton} onPress={handleAddReminder}>
+                    <Plus size={16} color="#FFFFFF" />
+                    <Text style={styles.simpleAddButtonText}>Add</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+
+            {/* Right Side - Existing Items and Info */}
+            <View style={[styles.rightPanel, isDesktop && styles.rightPanelDesktop]}>
+              {/* Contact Info */}
+              <View style={styles.simpleSection}>
+                <Text style={styles.simpleSectionTitle}>Contact Information</Text>
+                <View style={styles.contactInfoGrid}>
+                  <View style={styles.contactInfoItem}>
+                    <Phone size={16} color="#6B7280" />
+                    <Text style={styles.contactInfoText}>{expandedCustomer.phone}</Text>
+                  </View>
+                  <View style={styles.contactInfoItem}>
+                    <Mail size={16} color="#6B7280" />
+                    <Text style={styles.contactInfoText}>{expandedCustomer.email}</Text>
+                  </View>
+                  <View style={styles.contactInfoItem}>
+                    <MapPin size={16} color="#6B7280" />
+                    <Text style={styles.contactInfoText}>{expandedCustomer.address}, {expandedCustomer.city}</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Existing Tasks */}
+              <View style={styles.simpleSection}>
+                <Text style={styles.simpleSectionTitle}>Tasks ({expandedCustomer.tasks.length})</Text>
+                <ScrollView style={styles.itemsList} showsVerticalScrollIndicator={false}>
+                  {expandedCustomer.tasks.map((task) => (
+                    <View key={task.id} style={styles.simpleTaskCard}>
+                      <View style={styles.simpleTaskHeader}>
+                        <Text style={styles.simpleTaskTitle}>{task.title}</Text>
+                        <View style={[styles.simplePriorityBadge, { backgroundColor: getPriorityColor(task.priority) + '20' }]}>
+                          <Text style={[styles.simplePriorityBadgeText, { color: getPriorityColor(task.priority) }]}>
+                            {task.priority}
                           </Text>
+                        </View>
+                      </View>
+                      {task.description ? <Text style={styles.simpleTaskDescription}>{task.description}</Text> : null}
+                      <View style={styles.simpleTaskFooter}>
+                        <Text style={styles.simpleTaskDate}>
+                          {task.dueDate ? `Due: ${new Date(task.dueDate).toLocaleDateString()}` : 'No due date'}
+                        </Text>
+                        <View style={styles.simpleTaskStatus}>
+                          {task.status === 'completed' ? (
+                            <CheckCircle size={14} color="#10B981" />
+                          ) : (
+                            <Clock size={14} color="#F59E0B" />
+                          )}
                         </View>
                       </View>
                     </View>
                   ))}
-                </View>
+                </ScrollView>
               </View>
-            )}
-          </ScrollView>
 
-          {/* Status Change Section */}
-          <View style={styles.statusChangeSection}>
+              {/* Existing Reminders */}
+              <View style={styles.simpleSection}>
+                <Text style={styles.simpleSectionTitle}>Reminders ({expandedCustomer.reminders.length})</Text>
+                <ScrollView style={styles.itemsList} showsVerticalScrollIndicator={false}>
+                  {expandedCustomer.reminders.map((reminder) => (
+                    <View key={reminder.id} style={styles.simpleReminderCard}>
+                      <View style={styles.simpleReminderHeader}>
+                        <Text style={styles.simpleReminderTitle}>{reminder.title}</Text>
+                        <View style={styles.simpleReminderType}>
+                          <Text style={styles.simpleReminderTypeText}>{reminder.type}</Text>
+                        </View>
+                      </View>
+                      {reminder.description ? <Text style={styles.simpleReminderDescription}>{reminder.description}</Text> : null}
+                      <Text style={styles.simpleReminderDate}>
+                        {new Date(reminder.reminderDate).toLocaleString()}
+                      </Text>
+                    </View>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+                  </View>
+
+          {/* Bottom Status Change Section */}
+          <View style={[styles.statusChangeSection, isDesktop && styles.statusChangeSectionDesktop]}>
             <View style={styles.statusChangeHeader}>
               <Text style={styles.statusChangeTitle}>Customer Status</Text>
               <TouchableOpacity
@@ -586,7 +530,7 @@ export default function CustomersScreen() {
             
             {editingStatus ? (
               <View style={styles.statusButtons}>
-                {['active', 'inactive', 'pending'].map((status) => (
+                {['active', 'pending', 'inactive'].map((status) => (
                   <TouchableOpacity
                     key={status}
                     style={[
@@ -606,7 +550,7 @@ export default function CustomersScreen() {
                 ))}
               </View>
             ) : (
-              <View style={styles.currentStatus}>
+              <View style={styles.simpleCurrentStatus}>
                 <Text style={styles.currentStatusLabel}>Current Status:</Text>
                 <View style={[styles.statusBadge, { backgroundColor: getStatusBgColor(expandedCustomer.status) }]}>
                   <Text style={[styles.statusText, { color: getStatusColor(expandedCustomer.status) }]}>
@@ -677,7 +621,7 @@ export default function CustomersScreen() {
 
       {/* Customer List */}
       <ScrollView style={styles.customerList}>
-        <View style={isDesktop ? styles.desktopGrid : styles.mobileList}>
+        <View style={isDesktop ? styles.desktopGrid : undefined}>
           {filteredCustomers.map((customer) => (
             <View key={customer.id} style={[styles.customerCard, isDesktop && styles.desktopCard]}>
               <View style={styles.customerCardHeader}>
@@ -713,7 +657,7 @@ export default function CustomersScreen() {
                   style={styles.expandButton}
                   onPress={() => handleExpandCustomer(customer)}
                 >
-                  <MoreVertical size={20} color="#6B7280" />
+                  <ChevronRight size={20} color="#6B7280" />
                 </TouchableOpacity>
               </View>
 
@@ -857,9 +801,11 @@ const styles = StyleSheet.create({
     // Default mobile layout
   },
   desktopGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    ...(isDesktop && {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+    }),
   },
   customerCard: {
     backgroundColor: '#FFFFFF',
@@ -873,7 +819,10 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   desktopCard: {
-    width: isDesktop ? '48%' : '100%',
+    ...(isDesktop && {
+      width: '48%',
+      marginBottom: 16,
+    }),
   },
   customerCardHeader: {
     flexDirection: 'row',
@@ -951,6 +900,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F8FAFC',
   },
+  expandedContainerDesktop: {
+    maxWidth: isDesktop ? 1200 : undefined,
+    alignSelf: 'center',
+    width: '100%',
+  },
   expandedHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -974,8 +928,10 @@ const styles = StyleSheet.create({
   },
   customerInfoCard: {
     backgroundColor: '#FFFFFF',
-    margin: 16,
-    padding: 20,
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 8,
+    padding: 16,
     borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -986,11 +942,12 @@ const styles = StyleSheet.create({
   customerHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 12,
   },
   customerAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     backgroundColor: '#2563EB',
     justifyContent: 'center',
     alignItems: 'center',
@@ -1000,174 +957,319 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   customerNameLarge: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: '#1F2937',
     marginBottom: 4,
   },
   companyNameLarge: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#6B7280',
     marginBottom: 8,
   },
-  badgeContainer: {
+  simpleBadgeContainer: {
     flexDirection: 'row',
     gap: 8,
   },
-  tabContainer: {
+  quickContactActions: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 16,
-    borderRadius: 12,
-    padding: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    gap: 12,
   },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
+  quickContactButton: {
+    flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderRadius: 8,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
-  activeTab: {
-    backgroundColor: '#2563EB',
-  },
-  tabText: {
+  quickContactText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#374151',
+    marginLeft: 8,
   },
-  activeTabText: {
-    color: '#FFFFFF',
-  },
-  tabContent: {
+  mainContent: {
     flex: 1,
-    margin: 16,
+    flexDirection: 'column',
+    paddingHorizontal: 16,
   },
-  // Info Tab Styles
-  infoContent: {
-    gap: 20,
-  },
-  contactSection: {
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 16,
-  },
-  statsSection: {
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  statsGrid: {
+  mainContentDesktop: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    gap: 16,
   },
-  statItem: {
-    alignItems: 'center',
+  leftPanel: {
+    flex: 1,
   },
-  statValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 4,
+  leftPanelDesktop: {
+    flex: 0.4,
   },
-  statLabel: {
-    fontSize: 12,
-    color: '#6B7280',
+  rightPanel: {
+    flex: 1,
   },
-  // Tasks Tab Styles
-  tasksContent: {
-    gap: 20,
+  rightPanelDesktop: {
+    flex: 0.6,
   },
-  addTaskSection: {
+  simpleSection: {
     backgroundColor: '#FFFFFF',
-    padding: 20,
     borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  input: {
+  simpleSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 12,
+  },
+  simpleInput: {
     borderWidth: 1,
     borderColor: '#E5E7EB',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 16,
+    fontSize: 14,
     color: '#1F2937',
     backgroundColor: '#FFFFFF',
-    marginBottom: 12,
-  },
-  textArea: {
-    height: 80,
-    textAlignVertical: 'top',
-  },
-  inputRow: {
-    flexDirection: isDesktop ? 'row' : 'column',
-    gap: 12,
-  },
-  inputHalf: {
-    flex: isDesktop ? 1 : undefined,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
     marginBottom: 8,
   },
-  priorityButtons: {
+  simpleTextArea: {
+    height: 60,
+    textAlignVertical: 'top',
+  },
+  simpleRow: {
     flexDirection: 'row',
-    gap: 8,
-  },
-  priorityButton: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 4,
   },
-  priorityButtonActive: {
+  priorityContainer: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  simplePriorityButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  simplePriorityButtonActive: {
     backgroundColor: '#F3F4F6',
   },
-  priorityButtonText: {
+  simplePriorityText: {
     fontSize: 12,
     fontWeight: '600',
     color: '#6B7280',
   },
-  addButton: {
+  typeContainer: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  simpleTypeButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+  },
+  simpleTypeButtonActive: {
+    backgroundColor: '#2563EB',
+    borderColor: '#2563EB',
+  },
+  simpleTypeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  simpleTypeTextActive: {
+    color: '#FFFFFF',
+  },
+  simpleAddButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: '#2563EB',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginTop: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
   },
-  addButtonText: {
+  simpleAddButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginLeft: 4,
+  },
+  contactInfoGrid: {
+    gap: 8,
+  },
+  contactInfoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  contactInfoText: {
+    fontSize: 14,
+    color: '#374151',
+    marginLeft: 8,
+    flex: 1,
+  },
+  itemsList: {
+    maxHeight: 200,
+  },
+  simpleTaskCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+  simpleTaskHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 4,
+  },
+  simpleTaskTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1F2937',
+    flex: 1,
+  },
+  simplePriorityBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  simplePriorityBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  simpleTaskDescription: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginBottom: 8,
+  },
+  simpleTaskFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  simpleTaskDate: {
+    fontSize: 11,
+    color: '#6B7280',
+  },
+  simpleTaskStatus: {
+    // Just the icon
+  },
+  simpleReminderCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+  simpleReminderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 4,
+  },
+  simpleReminderTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1F2937',
+    flex: 1,
+  },
+  simpleReminderType: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    backgroundColor: '#F3F4F6',
+  },
+  simpleReminderTypeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#6B7280',
+    textTransform: 'uppercase',
+  },
+  simpleReminderDescription: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginBottom: 8,
+  },
+  simpleReminderDate: {
+    fontSize: 11,
+    color: '#6B7280',
+  },
+  statusChangeSection: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  statusChangeSectionDesktop: {
+    marginHorizontal: 16,
+  },
+  statusChangeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  statusChangeTitle: {
     fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  editStatusButton: {
+    padding: 8,
+  },
+  statusButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  statusButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  statusButtonActive: {
+    borderColor: '#2563EB',
+  },
+  statusButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  simpleCurrentStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  currentStatusLabel: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+});
     fontWeight: '600',
     color: '#FFFFFF',
     marginLeft: 8,
